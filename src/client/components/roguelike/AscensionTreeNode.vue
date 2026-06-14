@@ -3,7 +3,6 @@
     class="ascension-node"
     :class="nodeClass"
   >
-    <Handle type="target" :position="Position.Top" class="ascension-node__handle" />
     <div class="ascension-node__header">
       <span class="ascension-node__name">{{ tile.name }}</span>
       <span v-if="state.maxLevel > 1" class="ascension-node__level">
@@ -27,47 +26,43 @@
       <span v-else class="ascension-node__cost ascension-node__cost--empty">—</span>
       <button
         v-if="state.canUnlock"
+        type="button"
         class="ascension-node__action"
-        @click.stop="unlock"
+        @click="unlock"
       >
         {{ state.level > 0 ? 'Upgrade' : 'Unlock' }}
       </button>
       <span v-else-if="state.isMaxed" class="ascension-node__status ascension-node__status--maxed">Maxed</span>
       <span v-else class="ascension-node__status">Locked</span>
     </div>
-    <Handle type="source" :position="Position.Bottom" class="ascension-node__handle" />
   </div>
 </template>
 
 <script lang="ts">
 import {defineComponent, PropType} from 'vue';
-import {Handle, Position} from '@vue-flow/core';
 import {AscensionDisplayTile, AscensionTileNodeState} from '@/common/roguelike/AscensionTreeDisplay';
 import {AscensionNodeType} from '@/common/roguelike/AscensionTree';
 
+type AscensionNodeData = {
+  tile: AscensionDisplayTile;
+  state: AscensionTileNodeState;
+};
+
 export default defineComponent({
   name: 'AscensionTreeNode',
-  components: {Handle},
   props: {
-    data: {
-      type: Object as PropType<{
-        tile: AscensionDisplayTile;
-        state: AscensionTileNodeState;
-        onUnlock?: (nodeId: string) => void;
-      }>,
+    nodeData: {
+      type: Object as PropType<AscensionNodeData>,
       required: true,
     },
   },
   emits: ['unlock'],
-  data() {
-    return {Position};
-  },
   computed: {
     tile(): AscensionDisplayTile {
-      return this.data.tile;
+      return this.nodeData.tile;
     },
     state(): AscensionTileNodeState {
-      return this.data.state;
+      return this.nodeData.state;
     },
     typeLabel(): string {
       return this.tile.type === AscensionNodeType.DIFFICULTY ? 'Difficulty' : 'Buff';
@@ -91,9 +86,6 @@ export default defineComponent({
       if (!this.state.nextNodeId) {
         return;
       }
-      if (this.data.onUnlock) {
-        this.data.onUnlock(this.state.nextNodeId);
-      }
       this.$emit('unlock', this.state.nextNodeId);
     },
   },
@@ -102,6 +94,7 @@ export default defineComponent({
 
 <style scoped>
 .ascension-node {
+  position: absolute;
   width: 220px;
   min-height: 128px;
   box-sizing: border-box;
@@ -113,6 +106,7 @@ export default defineComponent({
   color: #e8edf5;
   font-size: 13px;
   line-height: 1.35;
+  z-index: 1;
 }
 
 .ascension-node--available {
@@ -131,13 +125,6 @@ export default defineComponent({
 
 .ascension-node--locked {
   opacity: 0.82;
-}
-
-.ascension-node__handle {
-  width: 8px;
-  height: 8px;
-  background: #7eb8e8;
-  border: 2px solid #1a2030;
 }
 
 .ascension-node__header {

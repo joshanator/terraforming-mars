@@ -405,6 +405,9 @@
               <div v-if="roguelikeSettings.ascension && roguelikeSettings.ascension.xpMultiplier > 1" style="color: #8cf; font-size: 13px; margin-top: 8px;">
                 XP Multiplier: x{{ roguelikeSettings.ascension.xpMultiplier.toFixed(1) }}
               </div>
+              <div v-if="roguelikeSettings.cardProgressMultiplier > 1" style="color: #8cf; font-size: 13px; margin-top: 8px;">
+                Card Progress: x{{ roguelikeSettings.cardProgressMultiplier.toFixed(2) }}
+              </div>
             </div>
 
             <button @click="startRoguelikeRun" style="padding: 15px 40px; background: #f4a460; color: #000; border: none; border-radius: 4px; font-weight: bold; font-size: 18px; cursor: pointer;">Start Roguelike Run</button>

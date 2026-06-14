@@ -41,6 +41,8 @@ export interface AscensionEffects {
   xpMultiplierBonus: number;
   /** Extra prelude cards to choose from beyond prelude slots. */
   preludeChoicesBonus: number;
+  /** Bonus added to the card progress multiplier (1.0 base + sum of these). */
+  cardProgressMultiplierBonus: number;
 }
 
 /** Definition of an ascension tree node. */
@@ -139,6 +141,43 @@ export const ASCENSION_TREE: ReadonlyArray<AscensionNode> = [
     chainLevel: 2,
   },
 
+  // Card progression buffs
+  {
+    id: 'asc_progress_1',
+    name: 'Rapid Prototyping I',
+    displayName: 'Rapid Prototyping',
+    description: '+25% card progress rate',
+    type: AscensionNodeType.BUFF,
+    cost: 2,
+    prerequisites: ['asc_buff_card'],
+    effects: {cardProgressMultiplierBonus: 0.25},
+    position: {x: 3, y: 1},
+    chainId: 'asc_progress',
+    chainLevel: 1,
+  },
+  {
+    id: 'asc_progress_2',
+    name: 'Rapid Prototyping II',
+    description: '+25% card progress rate',
+    type: AscensionNodeType.BUFF,
+    cost: 3,
+    prerequisites: ['asc_progress_1'],
+    effects: {cardProgressMultiplierBonus: 0.25},
+    position: {x: 3, y: 1},
+    chainId: 'asc_progress',
+    chainLevel: 2,
+  },
+  {
+    id: 'asc_mentor',
+    name: 'Mentorship Program',
+    description: '+15% card progress rate',
+    type: AscensionNodeType.BUFF,
+    cost: 2,
+    prerequisites: ['asc_buff_mc'],
+    effects: {cardProgressMultiplierBonus: 0.15},
+    position: {x: 2, y: 2},
+  },
+
   // Deeper difficulty nodes
   {
     id: 'asc_gen_1',
@@ -160,6 +199,16 @@ export const ASCENSION_TREE: ReadonlyArray<AscensionNode> = [
     effects: {cardCostIncrease: 1, xpMultiplierBonus: 0.3},
     position: {x: 0.5, y: 3},
   },
+  {
+    id: 'asc_draw_penalty',
+    name: 'Data Drought',
+    description: '-1 Starting Project Card · +0.35 XP multiplier',
+    type: AscensionNodeType.DIFFICULTY,
+    cost: 2,
+    prerequisites: ['asc_gen_1'],
+    effects: {cardDrawBonus: -1, xpMultiplierBonus: 0.35},
+    position: {x: 2, y: 3},
+  },
 
   // Capstone buff gated deep in the tree
   {
@@ -171,6 +220,16 @@ export const ASCENSION_TREE: ReadonlyArray<AscensionNode> = [
     prerequisites: ['asc_cost_1'],
     effects: {generationBonus: 1},
     position: {x: 0.5, y: 4},
+  },
+  {
+    id: 'asc_archivist',
+    name: 'Archivist Network',
+    description: '+25% card progress rate',
+    type: AscensionNodeType.BUFF,
+    cost: 4,
+    prerequisites: ['asc_buff_gen'],
+    effects: {cardProgressMultiplierBonus: 0.25},
+    position: {x: 1, y: 5},
   },
   {
     id: 'asc_tr_2',
@@ -209,6 +268,7 @@ export function emptyAscensionEffects(): AscensionEffects {
     cardCostIncrease: 0,
     xpMultiplierBonus: 0,
     preludeChoicesBonus: 0,
+    cardProgressMultiplierBonus: 0,
   };
 }
 
@@ -227,8 +287,14 @@ export function computeAscensionEffects(unlockedNodes: ReadonlyArray<AscensionNo
     totals.cardCostIncrease += node.effects.cardCostIncrease ?? 0;
     totals.xpMultiplierBonus += node.effects.xpMultiplierBonus ?? 0;
     totals.preludeChoicesBonus += node.effects.preludeChoicesBonus ?? 0;
+    totals.cardProgressMultiplierBonus += node.effects.cardProgressMultiplierBonus ?? 0;
   }
   return totals;
+}
+
+/** The run card-progress multiplier for a given set of unlocked ascension nodes. */
+export function getAscensionCardProgressMultiplier(unlockedNodes: ReadonlyArray<AscensionNodeId>): number {
+  return 1.0 + computeAscensionEffects(unlockedNodes).cardProgressMultiplierBonus;
 }
 
 /** The run XP multiplier for a given set of unlocked ascension nodes. */

@@ -22,6 +22,7 @@ import {RunStats} from '../../common/roguelike/XPReward';
 import {
   createCardProgress,
   recordCardPlays,
+  applyCardProgressMultiplier,
 } from '../../common/roguelike/CardProgress';
 import {
   purchaseCardUpgrade as purchaseCardUpgradeOnProgress,
@@ -41,6 +42,7 @@ import {
   getAscensionNode,
   canUnlockAscensionNode,
   createAscensionTreeState,
+  getAscensionCardProgressMultiplier,
 } from '../../common/roguelike/AscensionTree';
 import {RunXPSummary} from '../../common/roguelike/XPReward';
 import {CardName} from '../../common/cards/CardName';
@@ -237,13 +239,17 @@ export class ProfileManager {
     for (const cardName of rewards.runStats.cardsPlayedList) {
       playCounts.set(cardName, (playCounts.get(cardName) ?? 0) + 1);
     }
+    const cardProgressMultiplier = getAscensionCardProgressMultiplier(
+      profile.ascensionTree?.unlockedNodes ?? [],
+    );
     for (const cardName of rewards.cardsProgressed) {
       let progress = getCardProgress(profile, cardName);
       if (!progress) {
         progress = createCardProgress();
       }
       const plays = playCounts.get(cardName) ?? 1;
-      progress = recordCardPlays(progress, plays);
+      const effectivePlays = applyCardProgressMultiplier(plays, cardProgressMultiplier);
+      progress = recordCardPlays(progress, effectivePlays);
       // Keep cached bonuses consistent (e.g. after migrating older saves).
       recomputeCardBonuses(progress);
       setCardProgress(profile, cardName, progress);

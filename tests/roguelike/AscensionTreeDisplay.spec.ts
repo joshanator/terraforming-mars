@@ -106,4 +106,18 @@ describe('AscensionTreeDisplay', () => {
     expect(state.nextNodeId).eq('asc_tr_2');
     expect(state.canUnlock).eq(false);
   });
+
+  it('formats card progress bonuses', () => {
+    const summary = formatAscensionEffectsSummary({
+      trBonus: 0,
+      mcBonus: 0,
+      cardDrawBonus: 0,
+      generationBonus: 0,
+      cardCostIncrease: 0,
+      xpMultiplierBonus: 0,
+      preludeChoicesBonus: 0,
+      cardProgressMultiplierBonus: 0.5,
+    });
+    expect(summary).eq('+50% card progress');
+  });
 });

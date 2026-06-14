@@ -3,7 +3,7 @@ import {GameOptions} from '../game/GameOptions';
 import {CardName} from '../../common/cards/CardName';
 import {ProfileManager} from './ProfileManager';
 import {calculateUpgradeBonuses, ComputedUpgradeBonuses} from '../../common/roguelike/UpgradeTreeState';
-import {AscensionEffects, computeAscensionEffects} from '../../common/roguelike/AscensionTree';
+import {AscensionEffects, computeAscensionEffects, getAscensionCardProgressMultiplier} from '../../common/roguelike/AscensionTree';
 import {ROGUELIKE_BASE_TR, ROGUELIKE_BASE_STARTING_CARDS, ROGUELIKE_MAX_UPGRADE_PRELUDE_CHOICES} from '../../common/roguelike/constants';
 import * as constants from '../../common/constants';
 
@@ -48,6 +48,8 @@ export interface RoguelikeGameSettings {
   generationPenalty: number;
   /** Total number of generations the run will last */
   totalGenerations: number;
+  /** Multiplier applied to card play progress after each run */
+  cardProgressMultiplier: number;
 }
 
 /** Base number of generations for a solo roguelike run before upgrades and ascension penalties. */
@@ -91,6 +93,7 @@ export function getRoguelikeSettings(profileId: string): RoguelikeGameSettings |
       ROGUELIKE_MIN_GENERATIONS,
       ROGUELIKE_BASE_GENERATIONS + upgradeBonuses.generationBonus + effects.generationBonus,
     ),
+    cardProgressMultiplier: getAscensionCardProgressMultiplier(profile.ascensionTree?.unlockedNodes ?? []),
   };
 }
 

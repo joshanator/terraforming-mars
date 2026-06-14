@@ -87,6 +87,17 @@ export function playsToNextLevel(timesPlayed: number): number | undefined {
 }
 
 /**
+ * Scale play counts by an ascension card-progress multiplier.
+ * Always awards at least the raw plays recorded this run.
+ */
+export function applyCardProgressMultiplier(plays: number, multiplier: number): number {
+  if (plays <= 0 || multiplier <= 1) {
+    return plays;
+  }
+  return Math.max(plays, Math.round(plays * multiplier));
+}
+
+/**
  * Record that a card was played `plays` times, updating timesPlayed and level.
  * Does NOT change purchased upgrades.
  */

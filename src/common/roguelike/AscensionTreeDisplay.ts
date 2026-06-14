@@ -92,6 +92,7 @@ export function getAscensionTileCurrentEffects(
     totals.cardCostIncrease += node.effects.cardCostIncrease ?? 0;
     totals.xpMultiplierBonus += node.effects.xpMultiplierBonus ?? 0;
     totals.preludeChoicesBonus += node.effects.preludeChoicesBonus ?? 0;
+    totals.cardProgressMultiplierBonus += node.effects.cardProgressMultiplierBonus ?? 0;
   }
   return totals;
 }
@@ -124,6 +125,10 @@ export function formatAscensionEffectsSummary(effects: AscensionEffects): string
   }
   if ((effects.preludeChoicesBonus ?? 0) !== 0) {
     parts.push(`+${effects.preludeChoicesBonus} Prelude option${effects.preludeChoicesBonus === 1 ? '' : 's'}`);
+  }
+  if ((effects.cardProgressMultiplierBonus ?? 0) !== 0) {
+    const pct = Math.round(effects.cardProgressMultiplierBonus * 100);
+    parts.push(`+${pct}% card progress`);
   }
   return parts.join(' · ');
 }
