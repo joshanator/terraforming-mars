@@ -29,6 +29,9 @@ import {cardsToModel, coloniesToModel} from './ModelUtils';
 import {runId} from '../utils/server-ids';
 import {toName} from '../../common/utils/utils';
 import {MAX_AWARDS, MAX_MILESTONES} from '../../common/constants';
+import {RoguelikeBonusesModel, RoguelikeCardInfoModel} from '../../common/models/GameModel';
+import {getRoguelikeSettings, getMasteredCards} from '../roguelike/RoguelikeGameSetup';
+import {ProfileManager} from '../roguelike/ProfileManager';
 
 export class Server {
   public static getSimpleGameModel(game: IGame): SimpleGameModel {
@@ -83,6 +86,58 @@ export class Server {
       turmoil: turmoil,
       undoCount: game.undoCount,
       venusScaleLevel: game.getVenusScaleLevel(),
+      roguelikeXPSummary: game.roguelikeXPSummary,
+      roguelikeBonuses: this.getRoguelikeBonuses(game),
+      roguelikeCardInfo: this.getRoguelikeCardInfo(game),
+    };
+  }
+
+  private static getRoguelikeCardInfo(game: IGame): Record<string, RoguelikeCardInfoModel> | undefined {
+    const profileId = game.gameOptions.roguelikeProfileId;
+    if (!profileId) {
+      return undefined;
+    }
+    const profile = ProfileManager.getInstance().getProfile(profileId);
+    if (!profile) {
+      return undefined;
+    }
+    const result: Record<string, RoguelikeCardInfoModel> = {};
+    for (const entry of profile.cardProgress) {
+      result[entry.cardName] = {
+        level: entry.progress.level,
+        timesPlayed: entry.progress.timesPlayed,
+        mastered: entry.progress.mastered,
+      };
+    }
+    return result;
+  }
+
+  private static getRoguelikeBonuses(game: IGame): RoguelikeBonusesModel | undefined {
+    const profileId = game.gameOptions.roguelikeProfileId;
+    if (!profileId) {
+      return undefined;
+    }
+    const settings = getRoguelikeSettings(profileId);
+    if (!settings) {
+      return undefined;
+    }
+    return {
+      baseTR: settings.baseTR,
+      startingTR: settings.baseTR + settings.netTRBonus,
+      baseStartingCards: settings.baseStartingCards,
+      startingCards: settings.baseStartingCards + settings.netCardDrawBonus,
+      netTRBonus: settings.netTRBonus,
+      netMCBonus: settings.netMCBonus,
+      startingSteelBonus: settings.upgradeBonuses.startingSteelBonus,
+      startingTitaniumBonus: settings.upgradeBonuses.startingTitaniumBonus,
+      netCardDrawBonus: settings.netCardDrawBonus,
+      preludeSlots: settings.preludeSlots,
+      corporationChoices: settings.corporationChoices,
+      cardCostIncrease: settings.cardCostIncrease,
+      generationPenalty: settings.generationPenalty,
+      totalGenerations: settings.totalGenerations,
+      xpMultiplier: settings.ascension.xpMultiplier,
+      masteredCount: getMasteredCards(profileId).size,
     };
   }
 

@@ -35,14 +35,46 @@
                   </div>
               </div>
           </div>
+          
+          <!-- Roguelike XP Summary -->
+          <div v-if="game.roguelikeXPSummary" class="roguelike-xp-summary" style="background: rgba(244,164,96,0.15); border: 2px solid #f4a460; border-radius: 8px; padding: 20px; margin: 20px 0; color: white;">
+            <h2 style="color: #f4a460; margin-bottom: 15px;">XP Earned</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+              <div>Victory Points: <strong>{{ game.roguelikeXPSummary.profileXP.vpXP }} XP</strong></div>
+              <div>Cards Played: <strong>{{ game.roguelikeXPSummary.profileXP.cardsPlayedXP }} XP</strong></div>
+              <div>Tiles Placed: <strong>{{ game.roguelikeXPSummary.profileXP.tilesPlacedXP }} XP</strong></div>
+              <div>Parameters Completed: <strong>{{ game.roguelikeXPSummary.profileXP.parameterBonusXP }} XP</strong></div>
+              <div v-if="game.roguelikeXPSummary.profileXP.winMultiplier > 1">Win Bonus: <strong>x{{ game.roguelikeXPSummary.profileXP.winMultiplier.toFixed(2) }}</strong></div>
+              <div v-if="game.roguelikeXPSummary.profileXP.winStreakMultiplier > 1">Win Streak ({{ game.roguelikeXPSummary.profileXP.winStreak }}): <strong>x{{ game.roguelikeXPSummary.profileXP.winStreakMultiplier.toFixed(2) }}</strong></div>
+            </div>
+            <div style="color: #aaa; font-size: 14px; margin-bottom: 10px;">
+              Base XP: {{ game.roguelikeXPSummary.profileXP.baseXP }}
+              <span v-if="game.roguelikeXPSummary.profileXP.subtotal !== game.roguelikeXPSummary.profileXP.baseXP">
+                → {{ game.roguelikeXPSummary.profileXP.subtotal }} after win bonuses
+              </span>
+            </div>
+            <div style="font-size: 24px; font-weight: bold; color: #f4a460;">
+              Total: {{ game.roguelikeXPSummary.profileXP.total }} XP
+              <span v-if="game.roguelikeXPSummary.profileXP.ascensionMultiplier > 1" style="font-size: 14px; color: #aaa;">(x{{ game.roguelikeXPSummary.profileXP.ascensionMultiplier.toFixed(1) }} Ascension Bonus)</span>
+              <span v-if="game.roguelikeXPSummary.profileXP.abortPenaltyMultiplier < 1" style="font-size: 14px; color: #c66;">(50% abort penalty)</span>
+            </div>
+            <div v-if="game.roguelikeXPSummary.cardsProgressed.length > 0" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #444;">
+              <div style="color: #aaa; margin-bottom: 10px;">Cards progressed: {{ game.roguelikeXPSummary.cardsProgressed.length }}</div>
+            </div>
+          </div>
+          
           <div class="game_end_navigation">
             <div>
-              <a href="new-game">
+              <a v-if="game.roguelikeXPSummary" href="/">
+                  <AppButton size="big" type="back" />
+                  <span>Back to Profile</span>
+              </a>
+              <a v-else href="new-game">
                   <AppButton size="big" type="back" />
                   <span v-i18n>Create New Game</span>
               </a>
 
-              <a href=".">
+              <a v-if="!game.roguelikeXPSummary" href=".">
                   <AppButton size="big" type="back" />
                   <span v-i18n>Go to main page</span>
               </a>

@@ -286,11 +286,13 @@ export default defineComponent({
         return false;
       }
       if (this.hasPrelude) {
-        if (this.selectedPreludes.length < 2) {
-          this.warning = 'Select 2 preludes';
+        const minPreludes = this.preludeCardOption.min ?? 0;
+        const maxPreludes = this.preludeCardOption.max ?? minPreludes;
+        if (this.selectedPreludes.length < minPreludes) {
+          this.warning = minPreludes === 1 ? 'Select 1 prelude' : `Select ${minPreludes} preludes`;
           return false;
         }
-        if (this.selectedPreludes.length > 2) {
+        if (this.selectedPreludes.length > maxPreludes) {
           this.warning = 'You selected too many preludes';
           return false;
         }
@@ -329,7 +331,7 @@ export default defineComponent({
       return this.playerView.dealtCorporationCards.some((card) => card.name === CardName.ARIDOR);
     },
     hasPrelude() {
-      return hasOption(this.playerinput.options, titles.SELECT_PRELUDE_TITLE);
+      return findPreludeOption(this.playerinput.options) !== undefined;
     },
     hasCeo() {
       return hasOption(this.playerinput.options, titles.SELECT_CEO_TITLE);
@@ -343,7 +345,10 @@ export default defineComponent({
       return option;
     },
     preludeCardOption() {
-      const option = getOption(this.playerinput.options, titles.SELECT_PRELUDE_TITLE);
+      const option = findPreludeOption(this.playerinput.options);
+      if (option === undefined) {
+        throw new Error('invalid input, missing prelude option');
+      }
       if (getPreferences().experimental_ui) {
         option.max = option.cards.length;
       }
@@ -364,6 +369,14 @@ export default defineComponent({
     this.validate();
   },
 });
+
+function findPreludeOption(options: Array<PlayerInputModel>): SelectCardModel | undefined {
+  const option = options.find((option) => option.type === 'card' && titles.isSelectPreludeTitle(option.title as string));
+  if (option === undefined || option.type !== 'card') {
+    return undefined;
+  }
+  return option;
+}
 
 function getOption(options: Array<PlayerInputModel>, title: string): SelectCardModel {
   const option = options.find((option) => option.title === title);

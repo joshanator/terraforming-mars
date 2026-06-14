@@ -2,6 +2,28 @@
   <div id="player-home" :class="(game.turmoil ? 'with-turmoil': '')">
     <TopBar :playerView="playerView" />
 
+    <div v-if="game.roguelikeBonuses" style="margin: 6px auto; max-width: 1200px; padding: 8px 14px; background: rgba(244,164,96,0.1); border: 1px solid #f4a460; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 13px; color: #eee;">
+      <span style="color: #f4a460; font-weight: bold;">Roguelike Run</span>
+      <span title="Total generations this run">{{ game.roguelikeBonuses.totalGenerations }} gens</span>
+      <span :style="rogueColor(game.roguelikeBonuses.netTRBonus)" title="Starting TR">TR {{ game.roguelikeBonuses.startingTR }}</span>
+      <span :style="rogueColor(game.roguelikeBonuses.netMCBonus)" title="Starting M€ adjustment">M€ {{ delta(game.roguelikeBonuses.netMCBonus) }}</span>
+      <span v-if="game.roguelikeBonuses.startingSteelBonus > 0" :style="rogueColor(game.roguelikeBonuses.startingSteelBonus)">Steel +{{ game.roguelikeBonuses.startingSteelBonus }}</span>
+      <span v-if="game.roguelikeBonuses.startingTitaniumBonus > 0" :style="rogueColor(game.roguelikeBonuses.startingTitaniumBonus)">Ti +{{ game.roguelikeBonuses.startingTitaniumBonus }}</span>
+      <span :style="rogueColor(game.roguelikeBonuses.netCardDrawBonus)" title="Starting project cards">{{ game.roguelikeBonuses.startingCards }} cards</span>
+      <span v-if="game.roguelikeBonuses.corporationChoices > 2" :style="rogueColor(game.roguelikeBonuses.corporationChoices - 2)" title="Starting corporations to choose from">{{ game.roguelikeBonuses.corporationChoices }} corps</span>
+      <span v-if="game.roguelikeBonuses.preludeSlots > 0" :style="rogueColor(game.roguelikeBonuses.preludeSlots)">{{ game.roguelikeBonuses.preludeSlots }} prelude(s)</span>
+      <span v-if="game.roguelikeBonuses.cardCostIncrease > 0" :style="rogueColor(-game.roguelikeBonuses.cardCostIncrease)" title="Ascension card cost increase">Card cost +{{ game.roguelikeBonuses.cardCostIncrease }}M€</span>
+      <span v-if="game.roguelikeBonuses.masteredCount > 0" :style="rogueColor(1)" title="Mastered cards guaranteed in starting hand">{{ game.roguelikeBonuses.masteredCount }} mastered</span>
+      <span v-if="game.roguelikeBonuses.xpMultiplier > 1" style="color: #8cf;" title="XP multiplier from ascension">x{{ game.roguelikeBonuses.xpMultiplier.toFixed(1) }} XP</span>
+      <button
+        v-if="game.phase !== 'end'"
+        @click="abortRoguelikeRun"
+        title="End run early and receive 50% of XP earned so far"
+        style="margin-left: auto; padding: 4px 10px; font-size: 12px; background: rgba(170,68,68,0.85); color: #fff; border: 1px solid #c66; border-radius: 4px; cursor: pointer;">
+        Abort Run
+      </button>
+    </div>
+
     <div v-if="game.phase === 'end'">
       <div class="player_home_block">
         <DynamicTitle title="This game is over!" :color="thisPlayer.color"/>
@@ -176,6 +198,7 @@ import {sortActiveCards} from '@/client/utils/ActiveCardsSortingOrder';
 import {CardModel} from '@/common/models/CardModel';
 import {getCardOrThrow} from '../cards/ClientCardManifest';
 import {HomeMixin} from '@/client/mixins/HomeMixin';
+import {setRoguelikeCardInfo} from '@/client/utils/RoguelikeCardInfo';
 
 type PlayerHomeModel = {
   showHand: boolean;
@@ -276,6 +299,10 @@ export default defineComponent({
     },
   },
 
+  mounted() {
+    setRoguelikeCardInfo(this.game.roguelikeCardInfo);
+  },
+
   components: {
     DynamicTitle,
     Card,
@@ -325,6 +352,35 @@ export default defineComponent({
         return prefix + (this.showAutomatedCards ? 'automated' : 'automated-transparent');
       case 'EVENT':
         return prefix + (this.showEventCards ? 'event' : 'event-transparent');
+      }
+    },
+    delta(value: number): string {
+      if (value > 0) return '+' + value;
+      if (value < 0) return String(value);
+      return '+0';
+    },
+    rogueColor(value: number): string {
+      const color = value > 0 ? '#7d7' : value < 0 ? '#e88' : '#ccc';
+      return 'color: ' + color + ';';
+    },
+    async abortRoguelikeRun() {
+      if (!confirm('Are you sure you want to abort this run? You will receive 50% of the XP earned so far.')) {
+        return;
+      }
+      try {
+        const response = await fetch('/api/roguelike/abort', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({playerId: this.playerView.id}),
+        });
+        if (response.ok) {
+          window.location.href = '/the-end?id=' + this.playerView.id;
+        } else {
+          alert('Failed to abort run');
+        }
+      } catch (e) {
+        console.error('Error aborting run:', e);
+        alert('Failed to abort run');
       }
     },
     isActive(cardModel: CardModel): boolean {

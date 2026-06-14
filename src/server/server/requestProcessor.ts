@@ -16,6 +16,18 @@ import {ApiLogout} from '../routes/ApiLogout';
 import {ApiMetrics} from '../routes/ApiMetrics';
 import {ApiPlayer} from '../routes/ApiPlayer';
 import {ApiProfile} from '../routes/ApiProfile';
+import {
+  ApiRoguelikeProfile,
+  ApiRoguelikeProfiles,
+  ApiRoguelikeUpgrade,
+  ApiRoguelikeBan,
+  ApiRoguelikeAscension,
+  ApiRoguelikeAscend,
+  ApiRoguelikeSettings,
+  ApiRoguelikeCardUpgrade,
+} from '../routes/ApiRoguelike';
+import {ApiRoguelikeStart} from '../routes/ApiRoguelikeStart';
+import {ApiRoguelikeAbort} from '../routes/ApiRoguelikeAbort';
 import {ApiSpectator} from '../routes/ApiSpectator';
 import {ApiStats} from '../routes/ApiStats';
 import {ApiWaitingFor} from '../routes/ApiWaitingFor';
@@ -75,6 +87,16 @@ const handlers: Map<string, IHandler> = new Map(
     [paths.API_IPS, ApiIPs.INSTANCE],
     [paths.API_METRICS, ApiMetrics.INSTANCE],
     [paths.API_PLAYER, ApiPlayer.INSTANCE],
+    [paths.API_ROGUELIKE_PROFILE, ApiRoguelikeProfile.INSTANCE],
+    [paths.API_ROGUELIKE_PROFILES, ApiRoguelikeProfiles.INSTANCE],
+    [paths.API_ROGUELIKE_UPGRADE, ApiRoguelikeUpgrade.INSTANCE],
+    [paths.API_ROGUELIKE_BAN, ApiRoguelikeBan.INSTANCE],
+    [paths.API_ROGUELIKE_ASCENSION, ApiRoguelikeAscension.INSTANCE],
+    [paths.API_ROGUELIKE_ASCEND, ApiRoguelikeAscend.INSTANCE],
+    [paths.API_ROGUELIKE_CARD_UPGRADE, ApiRoguelikeCardUpgrade.INSTANCE],
+    [paths.API_ROGUELIKE_SETTINGS, ApiRoguelikeSettings.INSTANCE],
+    [paths.API_ROGUELIKE_START, ApiRoguelikeStart.INSTANCE],
+    [paths.API_ROGUELIKE_ABORT, ApiRoguelikeAbort.INSTANCE],
     [paths.API_STATS, ApiStats.INSTANCE],
     [paths.API_SPECTATOR, ApiSpectator.INSTANCE],
     [paths.API_WAITING_FOR, ApiWaitingFor.INSTANCE],
@@ -98,6 +120,7 @@ const handlers: Map<string, IHandler> = new Map(
     [paths.PLAYER_INPUT, PlayerInput.INSTANCE],
     [paths.API_PROFILE, ApiProfile.INSTANCE],
     [paths.RESET, Reset.INSTANCE],
+    [paths.ROGUELIKE, ServeApp.INSTANCE],
     [paths.SPECTATOR, ServeApp.INSTANCE],
     ['styles.css', ServeAsset.INSTANCE],
     [paths.THE_END, ServeApp.INSTANCE],

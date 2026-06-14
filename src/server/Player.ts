@@ -79,6 +79,7 @@ import {AlliedParty} from '../common/turmoil/Types';
 import {PlayedCards} from './cards/PlayedCards';
 import {From} from './logs/From';
 import {SelectStandardProjectToPlay} from './inputs/SelectStandardProjectToPlay';
+import {ProfileManager} from './roguelike/ProfileManager';
 
 const THROW_STATE_ERRORS = Boolean(process.env.THROW_STATE_ERRORS);
 const DEFAULT_GLOBAL_PARAMETER_STEPS = {
@@ -727,6 +728,17 @@ export class Player implements IPlayer {
       cost -= 2;
     }
 
+    // Roguelike card-level cost reduction
+    const roguelikeProfileId = this.game.gameOptions.roguelikeProfileId;
+    if (roguelikeProfileId) {
+      const costReduction = ProfileManager.getInstance().getCardCostReduction(roguelikeProfileId, card.name);
+      cost -= costReduction;
+
+      // Ascension card cost increase (stored on player during setup)
+      const cardCostIncrease = (this as any).roguelikeCardCostIncrease ?? 0;
+      cost += cardCostIncrease;
+    }
+
     return Math.max(cost, 0);
   }
 
@@ -978,6 +990,24 @@ export class Player implements IPlayer {
 
     // Update starting MC
     this.megaCredits += corporationCard.startingMegaCredits;
+
+    // Apply roguelike starting resource bonuses (only for first corporation)
+    if (!additionalCorp && this.game.gameOptions.roguelikeProfileId) {
+      const mcBonus = (this as any).roguelikeStartingMCBonus ?? 0;
+      const steelBonus = (this as any).roguelikeStartingSteelBonus ?? 0;
+      const titaniumBonus = (this as any).roguelikeStartingTitaniumBonus ?? 0;
+
+      if (mcBonus !== 0) {
+        this.megaCredits = Math.max(0, this.megaCredits + mcBonus);
+      }
+      if (steelBonus > 0) {
+        this.steel += steelBonus;
+      }
+      if (titaniumBonus > 0) {
+        this.titanium += titaniumBonus;
+      }
+    }
+
     // Update card cost.
     if (corporationCard.cardCost !== undefined) {
       this.cardCost += corporationCard.cardCost - constants.CARD_COST;

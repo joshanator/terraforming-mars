@@ -18,6 +18,11 @@
       <CardResourceCounter v-if="hasResourceType" :amount="resourceAmount" :type="resourceType" />
       <CardVictoryPoints v-if="cardMetadata.victoryPoints" :victoryPoints="cardMetadata.victoryPoints" />
       <CardExtraContent :card="card" />
+      <div v-if="roguelikeBadge"
+        :style="roguelikeBadgeStyle"
+        :title="'Roguelike: Level ' + roguelikeBadge.level + ', played ' + roguelikeBadge.timesPlayed + ' time(s)' + (roguelikeBadge.mastered ? ' (Mastered)' : '')">
+        L{{ roguelikeBadge.level }} <span style="opacity: 0.85;">×{{ roguelikeBadge.timesPlayed }}</span><span v-if="roguelikeBadge.mastered"> ★</span>
+      </div>
       <slot></slot>
   </div>
 </template>
@@ -46,6 +51,8 @@ import {getCardOrThrow} from '@/client/cards/ClientCardManifest';
 import {Color} from '@/common/Color';
 import {CardRequirementDescriptor} from '@/common/cards/CardRequirementDescriptor';
 import {GameModule} from '@/common/cards/GameModule';
+import {getRoguelikeCardInfo} from '@/client/utils/RoguelikeCardInfo';
+import {RoguelikeCardInfoModel} from '@/common/models/GameModel';
 
 
 export default defineComponent({
@@ -205,6 +212,18 @@ export default defineComponent({
     },
     playerCubeClass(): string {
       return `board-cube board-cube--${this.cubeColor}`;
+    },
+    roguelikeBadge(): RoguelikeCardInfoModel | undefined {
+      return getRoguelikeCardInfo(this.card.name);
+    },
+    roguelikeBadgeStyle(): string {
+      const base = 'position: absolute; top: 2px; right: 2px; z-index: 12; padding: 1px 4px; ' +
+        'border-radius: 3px; font-size: 9px; font-weight: bold; line-height: 1.2; pointer-events: none; ' +
+        'box-shadow: 0 0 2px rgba(0,0,0,0.6);';
+      const theme = this.roguelikeBadge?.mastered ?
+        'background: #f4a460; color: #000;' :
+        'background: rgba(20,20,30,0.9); color: #7d7;';
+      return base + theme;
     },
   },
 });

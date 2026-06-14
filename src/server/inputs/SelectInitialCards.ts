@@ -9,6 +9,7 @@ import {InputError} from './InputError';
 import {OptionsInput} from './OptionsPlayerInput';
 import {InputResponse, isSelectInitialCardsResponse} from '../../common/inputs/InputResponse';
 import {PlayerInput} from '../PlayerInput';
+import {getRoguelikePreludeConfig} from '../roguelike/RoguelikeGameSetup';
 
 type Inputs = {
   corp: PlayerInput | undefined,
@@ -54,16 +55,23 @@ export class SelectInitialCards extends OptionsInput<undefined> {
       player.dealtPreludeCards.push(new Merger());
     }
 
-    if (game.gameOptions.preludeExtension) {
-      this.push('prelude',
-        new SelectCard(titles.SELECT_PRELUDE_TITLE, undefined, player.dealtPreludeCards, {min: 2, max: 2})
-          .andThen((preludeCards) => {
-            if (preludeCards.length !== 2) {
-              throw new InputError('Only select 2 preludes');
-            }
-            player.preludeCardsInHand.push(...preludeCards);
-            return undefined;
-          }));
+    const preludeConfig = getRoguelikePreludeConfig(game.gameOptions);
+    if (preludeConfig.shouldDealPreludes) {
+      const preludesToKeep = Math.min(
+        preludeConfig.preludesKept,
+        player.dealtPreludeCards.length,
+      );
+      if (preludesToKeep > 0) {
+        this.push('prelude',
+          new SelectCard(titles.formatSelectPreludeTitle(preludesToKeep), undefined, player.dealtPreludeCards, {min: preludesToKeep, max: preludesToKeep})
+            .andThen((preludeCards) => {
+              if (preludeCards.length !== preludesToKeep) {
+                throw new InputError(`Only select ${preludesToKeep} preludes`);
+              }
+              player.preludeCardsInHand.push(...preludeCards);
+              return undefined;
+            }));
+      }
     }
 
     if (game.gameOptions.ceoExtension) {

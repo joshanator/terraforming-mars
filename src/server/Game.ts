@@ -84,6 +84,9 @@ import {BoardName} from '../common/boards/BoardName';
 import {SpaceType} from '../common/boards/SpaceType';
 import {ICard} from './cards/ICard';
 import {generateGameName} from './GameName';
+import {XPCalculator} from './roguelike/XPCalculator';
+import {applyRoguelikeStartingBonuses, getRoguelikeCardDealCount, getRoguelikeCorporationCount, getRoguelikePreludeConfig, getRoguelikeLastGeneration, getMasteredCards, getBannedCards} from './roguelike/RoguelikeGameSetup';
+import {RunXPSummary} from '../common/roguelike/XPReward';
 
 // Can be overridden by tests
 let createGameLog: () => Array<LogMessage> = () => [];
@@ -113,6 +116,7 @@ export class Game implements IGame, Logger {
   public inputsThisRound = 0;
   public resettable: boolean = false;
   public globalsPerGeneration: Array<Partial<Record<GlobalParameter, number>>> = [];
+  public roguelikeXPSummary: RunXPSummary | undefined;
 
   public generation: number = 1;
   public phase: Phase = Phase.RESEARCH;
@@ -282,6 +286,17 @@ export class Game implements IGame, Logger {
     }
     const gameOptions = {...DEFAULT_GAME_OPTIONS, ...partialOptions};
 
+    // In roguelike mode, merge the profile's banned cards (wildcard bans plus
+    // cards permanently banned via their own upgrade) into the banned list so
+    // they are filtered out of the project deck below.
+    if (gameOptions.roguelikeProfileId) {
+      const roguelikeBans = getBannedCards(gameOptions.roguelikeProfileId)
+        .filter((name) => name !== CardName.DELTA_PROJECT);
+      if (roguelikeBans.length > 0) {
+        gameOptions.bannedCards = Array.from(new Set([...gameOptions.bannedCards, ...roguelikeBans]));
+      }
+    }
+
     if (gameOptions.clonedGamedId !== undefined) {
       throw new Error('Cloning should not come through this execution path.');
     }
@@ -325,8 +340,12 @@ export class Game implements IGame, Logger {
       gameOptions.preludeDraftVariant = false;
       gameOptions.randomMA = RandomMAOptionType.NONE;
 
-      // Single player game player starts with 14TR
-      players[0].setTerraformRating(14);
+      // Single player game player starts with 14TR (roguelike uses ROGUELIKE_BASE_TR)
+      if (gameOptions.roguelikeProfileId) {
+        applyRoguelikeStartingBonuses(players[0], gameOptions);
+      } else {
+        players[0].setTerraformRating(14);
+      }
     }
 
     const name = generateGameName(UnseededRandom.INSTANCE);
@@ -386,6 +405,10 @@ export class Game implements IGame, Logger {
       }
     }
 
+    if (gameOptions.roguelikeProfileId) {
+      gameOptions.startingCorporations = getRoguelikeCorporationCount(gameOptions);
+    }
+
     // Failsafe for exceeding corporation pool
     // (I do not think this is necessary any further given how corporation cards are stored now)
     const minCorpsRequired = players.length * gameOptions.startingCorporations;
@@ -398,6 +421,9 @@ export class Game implements IGame, Logger {
     // handicaps.
     for (const player of game.playersInGenerationOrder) {
       player.setTerraformRating(player.terraformRating + player.handicap);
+      if (gameOptions.roguelikeProfileId) {
+        (player as {roguelikeStartingVP?: number}).roguelikeStartingVP = player.terraformRating;
+      }
       if (!gameOptions.corporateEra) {
         player.production.override({
           megacredits: 1,
@@ -408,6 +434,10 @@ export class Game implements IGame, Logger {
           heat: 1,
         });
       }
+
+      const roguelikePreludeConfig = gameOptions.roguelikeProfileId ?
+        getRoguelikePreludeConfig(gameOptions) :
+        undefined;
 
       if (!player.beginner ||
         // Bypass beginner choice if any extension is choosen
@@ -420,12 +450,46 @@ export class Game implements IGame, Logger {
         gameOptions.initialDraftVariant ||
         gameOptions.preludeDraftVariant ||
         gameOptions.underworldExpansion ||
-        gameOptions.moonExpansion) {
+        gameOptions.moonExpansion ||
+        roguelikePreludeConfig?.shouldDealPreludes === true) {
         player.dealtCorporationCards.push(...corporationDeck.drawN(game, gameOptions.startingCorporations));
         if (gameOptions.initialDraftVariant === false) {
-          player.dealtProjectCards.push(...projectDeck.drawN(game, 10));
+          // Use roguelike card count if applicable
+          const cardCount = getRoguelikeCardDealCount(gameOptions);
+
+          // For roguelike mode, first draw mastered cards, then fill the rest
+          if (gameOptions.roguelikeProfileId) {
+            const masteredCards = getMasteredCards(gameOptions.roguelikeProfileId);
+            if (masteredCards.size > 0) {
+              // Draw mastered cards first
+              const mastered = projectDeck.drawByConditionOrThrow(
+                game,
+                Math.min(masteredCards.size, cardCount),
+                (card) => masteredCards.has(card.name),
+              );
+              player.dealtProjectCards.push(...mastered);
+
+              // Fill remaining slots with random cards
+              const remaining = cardCount - mastered.length;
+              if (remaining > 0) {
+                player.dealtProjectCards.push(...projectDeck.drawN(game, remaining));
+              }
+            } else {
+              player.dealtProjectCards.push(...projectDeck.drawN(game, cardCount));
+            }
+          } else {
+            player.dealtProjectCards.push(...projectDeck.drawN(game, cardCount));
+          }
         }
-        if (gameOptions.preludeExtension) {
+        // Handle preludes
+        if (gameOptions.roguelikeProfileId) {
+          // Roguelike mode: prelude handling based on unlocked upgrades
+          const preludeConfig = getRoguelikePreludeConfig(gameOptions);
+          if (preludeConfig.shouldDealPreludes) {
+            player.dealtPreludeCards.push(...preludeDeck.drawN(game, preludeConfig.preludesDealt));
+          }
+        } else if (gameOptions.preludeExtension) {
+          // Standard prelude handling when not in roguelike mode
           gameOptions.startingPreludes = Math.max(gameOptions.startingPreludes ?? 0, constants.PRELUDE_CARDS_DEALT_PER_PLAYER);
           player.dealtPreludeCards.push(...preludeDeck.drawN(game, gameOptions.startingPreludes));
         }
@@ -614,6 +678,12 @@ export class Game implements IGame, Logger {
         lastGeneration += 2;
       }
     }
+
+    // Apply roguelike ascension generation penalty
+    if (options.roguelikeProfileId) {
+      lastGeneration = getRoguelikeLastGeneration(lastGeneration, options);
+    }
+
     return lastGeneration;
   }
 
@@ -1135,6 +1205,20 @@ export class Game implements IGame, Logger {
     });
 
     Database.getInstance().saveGameResults(this.id, this.players.length, this.generation, this.gameOptions, scores);
+
+    // Process roguelike XP rewards for solo mode
+    if (this.isSoloMode() && this.gameOptions.roguelikeProfileId) {
+      try {
+        const xpSummary = XPCalculator.processGameEnd(this, this.gameOptions.roguelikeProfileId);
+        if (xpSummary) {
+          this.roguelikeXPSummary = xpSummary;
+          this.log('Roguelike XP earned: ${0}', (b) => b.number(xpSummary.profileXP.total));
+        }
+      } catch (err) {
+        console.error('Error processing roguelike XP:', err);
+      }
+    }
+
     this.phase = Phase.END;
     const gameLoader = GameLoader.getInstance();
     await gameLoader.saveGame(this);

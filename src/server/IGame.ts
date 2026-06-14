@@ -33,6 +33,7 @@ import {GlobalParameter} from '../common/GlobalParameter';
 import {UnderworldData} from './underworld/UnderworldData';
 import {OrOptions} from './inputs/OrOptions';
 import {IStandardProjectCard} from './cards/IStandardProjectCard';
+import {RunXPSummary} from '../common/roguelike/XPReward';
 
 export interface Score {
   corporation: String;
@@ -64,6 +65,7 @@ export interface IGame extends Logger {
    * Used for rendering game-end statistics.
    */
   globalsPerGeneration: Array<Partial<Record<GlobalParameter, number>>>;
+  roguelikeXPSummary: RunXPSummary | undefined;
   phase: Phase;
   projectDeck: ProjectDeck;
   preludeDeck: PreludeDeck;

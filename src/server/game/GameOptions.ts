@@ -74,6 +74,10 @@ export type GameOptions = {
   altVenusBoard: boolean;
   escapeVelocity?: EscapeVelocityOptions;
   twoCorpsVariant: boolean;
+
+  // Roguelike mode
+  /** Profile ID for roguelike progression tracking (solo mode only) */
+  roguelikeProfileId: string | undefined;
 }
 
 export const DEFAULT_GAME_OPTIONS: GameOptions = {
@@ -145,4 +149,5 @@ export const DEFAULT_GAME_OPTIONS: GameOptions = {
   undoOption: false,
   venusNextExtension: false,
   twoCorpsVariant: false,
+  roguelikeProfileId: undefined,
 };

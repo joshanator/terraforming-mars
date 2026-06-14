@@ -1208,6 +1208,7 @@ export default defineComponent({
         twoCorpsVariant,
         startingCeos,
         startingPreludes,
+        roguelikeProfileId: undefined,
       };
       return JSON.stringify(dataToSend, undefined, 4);
     },

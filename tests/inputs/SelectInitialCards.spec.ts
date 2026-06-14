@@ -6,6 +6,8 @@ import {CardName} from '../../src/common/cards/CardName';
 import {ICorporationCard} from '../../src/server/cards/corporation/ICorporationCard';
 import {cardsFromJSON, ceosFromJSON, corporationCardsFromJSON, preludesFromJSON} from '../../src/server/createCard';
 import {toName} from '../../src/common/utils/utils';
+import {ProfileManager} from '../../src/server/roguelike/ProfileManager';
+import {createProfile} from '../../src/common/roguelike/Profile';
 
 describe('SelectInitialCards', () => {
   let player: TestPlayer;
@@ -95,5 +97,73 @@ describe('SelectInitialCards', () => {
     expect(player.game.corporationDeck.discardPile.map(toName)).to.have.members([CardName.HELION]);
     expect(player.game.ceoDeck.discardPile.map(toName)).to.have.members([CardName.MUSK]);
     expect(player.game.preludeDeck.discardPile.map(toName)).to.have.members([CardName.DONATION, CardName.SUPPLIER]);
+  });
+
+  it('Roguelike preludes without prelude extension', () => {
+    const [/* game */, player] = testGame(1);
+    const profile = createProfile('test');
+    profile.upgradeTree.unlockedNodes = ['prelude_1', 'prelude_choices'];
+    (ProfileManager.getInstance() as unknown as {profiles: Map<string, unknown>}).profiles.set(profile.id, profile);
+
+    player.game.gameOptions.roguelikeProfileId = profile.id;
+    player.game.gameOptions.preludeExtension = false;
+    player.game.projectDeck.discardPile.length = 0;
+    player.game.corporationDeck.discardPile.length = 0;
+    player.dealtCorporationCards = corporationCardsFromJSON([CardName.INVENTRIX, CardName.HELION]);
+    player.dealtProjectCards = cardsFromJSON([CardName.ANTS]);
+    player.dealtPreludeCards = preludesFromJSON([
+      CardName.LOAN,
+      CardName.BIOLAB,
+      CardName.DONATION,
+    ]);
+    selectInitialCards = new SelectInitialCards(player, cb);
+
+    const preludeOption = selectInitialCards.inputs.prelude?.toModel(player);
+    expect(preludeOption).is.not.undefined;
+    expect(preludeOption!.type).eq('card');
+    if (preludeOption!.type === 'card') {
+      expect(preludeOption!.min).eq(1);
+      expect(preludeOption!.max).eq(1);
+      expect(preludeOption!.cards).to.have.length(3);
+    }
+
+    selectInitialCards.process({type: 'initialCards', responses: [
+      {type: 'card', cards: [CardName.INVENTRIX]},
+      {type: 'card', cards: [CardName.LOAN]},
+      {type: 'card', cards: [CardName.ANTS]},
+    ]}, player);
+
+    expect(player.preludeCardsInHand.map(toName)).to.have.members([CardName.LOAN]);
+    expect(player.game.preludeDeck.discardPile.map(toName)).to.have.members([
+      CardName.BIOLAB,
+      CardName.DONATION,
+    ]);
+  });
+
+  it('Roguelike preludes use dynamic selection title', () => {
+    const [/* game */, player] = testGame(1);
+    const profile = createProfile('test');
+    profile.upgradeTree.unlockedNodes = ['prelude_1', 'prelude_2', 'prelude_3'];
+    (ProfileManager.getInstance() as unknown as {profiles: Map<string, unknown>}).profiles.set(profile.id, profile);
+
+    player.game.gameOptions.roguelikeProfileId = profile.id;
+    player.game.gameOptions.preludeExtension = false;
+    player.dealtCorporationCards = corporationCardsFromJSON([CardName.INVENTRIX]);
+    player.dealtProjectCards = cardsFromJSON([CardName.ANTS]);
+    player.dealtPreludeCards = preludesFromJSON([
+      CardName.LOAN,
+      CardName.BIOLAB,
+      CardName.DONATION,
+    ]);
+    selectInitialCards = new SelectInitialCards(player, cb);
+
+    const preludeOption = selectInitialCards.inputs.prelude?.toModel(player);
+    expect(preludeOption).is.not.undefined;
+    expect(preludeOption!.type).eq('card');
+    if (preludeOption!.type === 'card') {
+      expect(preludeOption!.title).eq('Select 3 Prelude cards');
+      expect(preludeOption!.min).eq(3);
+      expect(preludeOption!.max).eq(3);
+    }
   });
 });

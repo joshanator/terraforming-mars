@@ -13,6 +13,36 @@ import {SpectatorId} from '../Types';
 import {ColonyName} from '../colonies/ColonyName';
 import {GlobalParameter} from '../GlobalParameter';
 import {Tag} from '../cards/Tag';
+import {RunXPSummary} from '../roguelike/XPReward';
+
+// Active roguelike run bonuses, shown in-game. Computed server-side so it
+// stays in sync with the values actually applied to the game.
+export type RoguelikeBonusesModel = {
+  baseTR: number;
+  startingTR: number;
+  baseStartingCards: number;
+  startingCards: number;
+  netTRBonus: number;
+  netMCBonus: number;
+  startingSteelBonus: number;
+  startingTitaniumBonus: number;
+  netCardDrawBonus: number;
+  preludeSlots: number;
+  corporationChoices: number;
+  cardCostIncrease: number;
+  generationPenalty: number;
+  totalGenerations: number;
+  xpMultiplier: number;
+  masteredCount: number;
+};
+
+// Per-card roguelike progression info, keyed by card name. Used to render
+// level/usage badges on cards during a run.
+export type RoguelikeCardInfoModel = {
+  level: number;
+  timesPlayed: number;
+  mastered: boolean;
+};
 
 // Common data about a game not assocaited with a player (eg the temperature.)
 export type GameModel = {
@@ -47,4 +77,7 @@ export type GameModel = {
   turmoil: TurmoilModel | undefined;
   undoCount: number;
   venusScaleLevel: number;
+  roguelikeXPSummary?: RunXPSummary;
+  roguelikeBonuses?: RoguelikeBonusesModel;
+  roguelikeCardInfo?: Record<string, RoguelikeCardInfoModel>;
 }
